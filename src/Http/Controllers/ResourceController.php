@@ -17,6 +17,7 @@ use ArieTimmerman\Laravel\SCIMServer\Parser\Parser as ParserParser;
 use ArieTimmerman\Laravel\SCIMServer\PolicyDecisionPoint;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 
 class ResourceController extends Controller
@@ -31,6 +32,18 @@ class ResourceController extends Controller
         $validations = $resourceType->getValidations();
 
         foreach ($validations as $key => $value) {
+            if (is_array($value)) {
+                $value = Arr::map($value, function ($rule) use ($resourceObject) {
+                    if (is_string($rule)) {
+                        return $resourceObject ? preg_replace('/,\[OBJECT_ID\]/', ',' . $resourceObject->id, $rule) : str_replace(',[OBJECT_ID]', '', $rule);
+                    }
+
+                    return $rule;
+                });
+
+                $validations[$key] = $value;
+            }
+            
             if (is_string($value)) {
                 $validations[$key] = $resourceObject ? preg_replace('/,\[OBJECT_ID\]/', ',' . $resourceObject->id, $value) : str_replace(',[OBJECT_ID]', '', $value);
             }
